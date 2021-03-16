@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -84,28 +85,34 @@ func processResponse(model updatesModel) {
 }
 
 func processMessage(model resultModel) {
-	if model.Message.Text == "/start" {
+	if  strings.HasPrefix(model.Message.Text, "/start") {
 		message := fmt.Sprint("chat_id: ", model.Message.Chat.Id)
-		sendMessage(model.Message.Chat.Id, message)
+		sendMessage(model.Message.Chat.Id, message, nil)
 		return
 	}
 
-	if model.Message.Text == "/end" {
+	if strings.HasPrefix(model.Message.Text, "/end") {
 		time.Sleep(1 * time.Second)
 		os.Exit(0)
 	}
 	fmt.Println(model.Message.Text)
+
 }
 
-func sendMessage(chatID int64, text string) error {
+func sendMessage(chatID int64, text string, parseMode interface{}) error {
 	if chatID == 0 {
 		return errors.New("invalid chat id")
 	}
-	postBody, err := json.Marshal(map[string]interface{}{
+	data := map[string]interface{}{
 		"text":    text,
-		"parse_mode": "markdown",
 		"chat_id": chatID,
-	})
+	}
+
+	if parseMode != nil {
+		data["parse_mode"] = parseMode
+	}
+
+	postBody, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
@@ -121,7 +128,6 @@ func readAll() {
 	buf := make([]byte, 0, 4*1024)
 
 	for {
-
 		n, err := r.Read(buf[:cap(buf)])
 		buf = buf[:n]
 
@@ -138,7 +144,7 @@ func readAll() {
 		}
 
 		nChunks++
-		sendMessage(chatID, "```\n" + string(buf) + "\n```")
+		sendMessage(chatID, "```\n" + string(buf) + "\n```", "markdown")
 
 		if err != nil && err != io.EOF {
 			log.Fatal(err)
