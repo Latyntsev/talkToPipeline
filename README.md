@@ -1,6 +1,6 @@
 # talkToPipeline
 
-CLI tool for integration other CLI tools with telegram
+CLI tool for integration of other CLI tools with telegram
 
 ## Example
 
